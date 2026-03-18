@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1773797798683,
+      "tag": "0000_unique_bloodstorm",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773802299258,
+      "tag": "0001_fixed_exiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773855103825,
+      "tag": "0002_late_nova",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773855784216,
+      "tag": "0003_productive_radioactive_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1773864612790,
+      "tag": "0004_unique_warbound",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774070400000,
+      "tag": "0005_scoring_config",
+      "breakpoints": true
+    }
+  ]
+}

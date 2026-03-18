@@ -1,0 +1,2 @@
+ALTER TABLE "playgrounds" ADD COLUMN "disabled_rule_ids" jsonb DEFAULT '[]'::jsonb NOT NULL;--> statement-breakpoint
+ALTER TABLE "playgrounds" ADD COLUMN "custom_rules" jsonb DEFAULT '[]'::jsonb NOT NULL;
