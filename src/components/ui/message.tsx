@@ -49,8 +49,7 @@ export type MessageContentProps = {
   markdown?: boolean
   variant?: "bubble" | "prose"
   className?: string
-} & React.ComponentProps<typeof Markdown> &
-  React.HTMLProps<HTMLDivElement>
+} & React.HTMLProps<HTMLDivElement>
 
 const MessageContent = ({
   children,

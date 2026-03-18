@@ -162,18 +162,29 @@ export async function POST(req: Request) {
 
   const system = systemParts.join("\n\n");
 
+  const selectedModel = model || "anthropic/claude-sonnet-4-6";
+  const isAnthropic = selectedModel.startsWith("anthropic/");
+
   const result = streamText({
-    model: model || "anthropic/claude-sonnet-4-6",
+    model: selectedModel,
     system,
     messages: await convertToModelMessages(messages),
     providerOptions: {
-      anthropic: {
-        cacheControl: { type: "ephemeral" },
-      },
+      ...(isAnthropic && {
+        anthropic: {
+          cacheControl: { type: "ephemeral" },
+          thinking: { type: "enabled", budgetTokens: 10000 },
+        },
+      }),
     },
   });
 
   return result.toUIMessageStreamResponse({
     sendReasoning: true,
+    messageMetadata: ({ part }) => {
+      if (part.type === "finish") {
+        return { totalUsage: part.totalUsage };
+      }
+    },
   });
 }

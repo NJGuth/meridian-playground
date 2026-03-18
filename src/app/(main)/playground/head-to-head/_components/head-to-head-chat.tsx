@@ -10,6 +10,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
 import { Square } from "lucide-react";
+import type { ChatUIMessage } from "@/lib/types/chat-metadata";
 import type { IdentityToneConfig } from "@/lib/types/identity-tone";
 import type { RulesConfig } from "@/lib/types/playground-rules";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import {
   ReasoningTrigger,
   ReasoningContent,
 } from "@/components/ai-elements/reasoning";
+import { Badge } from "@/components/ui/badge";
 import { Loader } from "@/components/ui/loader";
 
 export type PlaygroundOption = {
@@ -99,10 +101,21 @@ export const HeadToHeadChat = forwardRef<
     [],
   );
 
-  const { messages, sendMessage, stop, status } = useChat({ transport });
+  const { messages, sendMessage, stop, status } = useChat<ChatUIMessage>({
+    transport,
+  });
 
   const isStreaming = status === "streaming";
   const isPending = status === "submitted";
+
+  const totalTokens = useMemo(
+    () =>
+      messages.reduce((sum, m) => {
+        const tokens = m.metadata?.totalUsage?.totalTokens;
+        return sum + (typeof tokens === "number" ? tokens : 0);
+      }, 0),
+    [messages],
+  );
 
   useImperativeHandle(ref, () => ({
     sendMessage: (text: string, personId: string | null) => {
@@ -161,10 +174,15 @@ export const HeadToHeadChat = forwardRef<
             <Square className="size-3 fill-current" />
           </Button>
         )}
+        {totalTokens > 0 && (
+          <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground">
+            {totalTokens.toLocaleString()} tokens
+          </span>
+        )}
       </div>
 
       <ChatContainerRoot className="flex-1">
-        <ChatContainerContent className="gap-4 px-4 py-4">
+        <ChatContainerContent className="gap-8 px-4 py-4">
           {!selected && messages.length === 0 && (
             <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
               Select a playground to get started.
@@ -210,6 +228,9 @@ export const HeadToHeadChat = forwardRef<
 
             if (!hasContent) return null;
 
+            const messageTokens =
+              message.metadata?.totalUsage?.totalTokens;
+
             return (
               <Message key={message.id}>
                 <div className="flex min-w-0 flex-col gap-2">
@@ -218,6 +239,14 @@ export const HeadToHeadChat = forwardRef<
                     isLastMessage={index === messages.length - 1}
                     isStreaming={isStreaming}
                   />
+                  {typeof messageTokens === "number" && messageTokens > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="w-fit tabular-nums text-muted-foreground"
+                    >
+                      {messageTokens.toLocaleString()} tokens
+                    </Badge>
+                  )}
                 </div>
               </Message>
             );

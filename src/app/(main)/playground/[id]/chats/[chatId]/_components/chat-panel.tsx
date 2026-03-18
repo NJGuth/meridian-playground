@@ -134,7 +134,7 @@ export function ChatPanel({
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <ChatContainerRoot className="flex-1">
-        <ChatContainerContent className="mx-auto w-full max-w-3xl gap-4 px-6 py-6">
+        <ChatContainerContent className="mx-auto w-full max-w-3xl gap-8 px-6 py-6">
           {messages.length === 0 && !isPending && (
             <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
               Send a message to start the conversation.
