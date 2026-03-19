@@ -87,6 +87,19 @@ export const assessments = pgTable("assessments", {
     .notNull(),
 });
 
+export const messages = pgTable("messages", {
+  id: text("id").primaryKey(),
+  chatId: uuid("chat_id")
+    .notNull()
+    .references(() => chats.id, { onDelete: "cascade" }),
+  role: text("role").notNull(),
+  parts: jsonb("parts").$type<unknown[]>().notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 export const scoringConfig = pgTable("scoring_config", {
   id: uuid("id").defaultRandom().primaryKey(),
   ld12HighThreshold: integer("ld12_high_threshold").notNull().default(75),

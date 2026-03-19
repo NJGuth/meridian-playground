@@ -4,6 +4,7 @@ import { playgrounds } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { ChatPanel } from "./_components/chat-panel";
 import { getAllPrompts } from "@/server/actions/prompt";
+import { getMessagesForChat } from "@/server/actions/message";
 import type { IdentityToneConfig, FeedbackStyle, CoachingPosture } from "@/lib/types/identity-tone";
 import type { RulesConfig } from "@/lib/types/playground-rules";
 
@@ -12,9 +13,9 @@ export default async function ChatPage({
 }: {
   params: Promise<{ id: string; chatId: string }>;
 }) {
-  const { id } = await params;
+  const { id, chatId } = await params;
 
-  const [[playground], allPrompts] = await Promise.all([
+  const [[playground], allPrompts, persistedMessages] = await Promise.all([
     db
       .select({
         model: playgrounds.model,
@@ -29,6 +30,7 @@ export default async function ChatPage({
       .where(eq(playgrounds.id, id))
       .limit(1),
     getAllPrompts(),
+    getMessagesForChat(chatId),
   ]);
 
   if (!playground) notFound();
@@ -47,10 +49,12 @@ export default async function ChatPage({
 
   return (
     <ChatPanel
+      chatId={chatId}
       model={playground.model}
       prompts={allPrompts}
       identityTone={identityTone}
       rulesConfig={rulesConfig}
+      initialMessages={persistedMessages}
     />
   );
 }

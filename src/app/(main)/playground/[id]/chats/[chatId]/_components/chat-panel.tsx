@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { UIMessage } from "ai";
@@ -8,6 +8,7 @@ import { ArrowUp, Square, MessageSquareText } from "lucide-react";
 import type { IdentityToneConfig } from "@/lib/types/identity-tone";
 import type { RulesConfig } from "@/lib/types/playground-rules";
 import { usePersonId } from "@/app/(main)/playground/[id]/_components/person-context";
+import { saveMessage } from "@/server/actions/message";
 import { Button } from "@/components/ui/button";
 import {
   ChatContainerRoot,
@@ -88,15 +89,19 @@ function MessageParts({
 }
 
 export function ChatPanel({
+  chatId,
   model,
   prompts = [],
   identityTone,
   rulesConfig,
+  initialMessages,
 }: {
+  chatId: string;
   model: string;
   prompts?: PromptRecord[];
   identityTone?: IdentityToneConfig;
   rulesConfig?: RulesConfig;
+  initialMessages?: UIMessage[];
 }) {
   const [input, setInput] = useState("");
   const [promptsOpen, setPromptsOpen] = useState(false);
@@ -107,28 +112,49 @@ export function ChatPanel({
     [],
   );
 
-  const { messages, sendMessage, stop, status } = useChat({ transport });
+  const onFinish = useCallback(
+    ({ message }: { message: UIMessage }) => {
+      saveMessage(chatId, message);
+    },
+    [chatId],
+  );
+
+  const { messages, sendMessage, stop, status } = useChat({
+    transport,
+    messages: initialMessages,
+    onFinish,
+  });
 
   const isStreaming = status === "streaming";
   const isPending = status === "submitted";
 
+  const persistAndSend = useCallback(
+    (text: string) => {
+      const userMessage: UIMessage = {
+        id: crypto.randomUUID(),
+        role: "user",
+        parts: [{ type: "text", text }],
+      };
+      saveMessage(chatId, userMessage);
+      sendMessage(
+        { text },
+        { body: { model, identityTone, rulesConfig, personId: personId ?? undefined } },
+      );
+    },
+    [chatId, sendMessage, model, identityTone, rulesConfig, personId],
+  );
+
   const handleSubmit = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
-    sendMessage(
-      { text: trimmed },
-      { body: { model, identityTone, rulesConfig, personId: personId ?? undefined } },
-    );
+    persistAndSend(trimmed);
     setInput("");
   };
 
   const handleSelectPrompt = (prompt: PromptRecord) => {
     setPromptsOpen(false);
     if (!prompt.content.trim()) return;
-    sendMessage(
-      { text: prompt.content },
-      { body: { model, identityTone, rulesConfig, personId: personId ?? undefined } },
-    );
+    persistAndSend(prompt.content);
   };
 
   return (
