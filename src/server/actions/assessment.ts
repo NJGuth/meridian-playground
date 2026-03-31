@@ -91,3 +91,53 @@ export async function fetchValuesAssessment(
     completedAt: row.createdAt.toISOString(),
   };
 }
+
+export interface HoganAssessmentResult {
+  pctileScores: Record<string, number>;
+  completedAt: string;
+}
+
+export async function fetchHPIAssessment(
+  personId: string,
+): Promise<HoganAssessmentResult | null> {
+  return fetchHoganInstrument(personId, "hogan_hpi");
+}
+
+export async function fetchHDSAssessment(
+  personId: string,
+): Promise<HoganAssessmentResult | null> {
+  return fetchHoganInstrument(personId, "hogan_hds");
+}
+
+export async function fetchMVPIAssessment(
+  personId: string,
+): Promise<HoganAssessmentResult | null> {
+  return fetchHoganInstrument(personId, "hogan_mvpi");
+}
+
+async function fetchHoganInstrument(
+  personId: string,
+  type: "hogan_hpi" | "hogan_hds" | "hogan_mvpi",
+): Promise<HoganAssessmentResult | null> {
+  const [row] = await db
+    .select({
+      data: assessments.data,
+      createdAt: assessments.createdAt,
+    })
+    .from(assessments)
+    .where(and(eq(assessments.personId, personId), eq(assessments.type, type)))
+    .limit(1);
+
+  if (!row) return null;
+
+  const data = row.data as { pctileScores?: Record<string, number> };
+  if (!data.pctileScores) return null;
+
+  const allZeroes = Object.values(data.pctileScores).every((v) => v === 0);
+  if (allZeroes) return null;
+
+  return {
+    pctileScores: data.pctileScores,
+    completedAt: row.createdAt.toISOString(),
+  };
+}

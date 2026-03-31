@@ -90,6 +90,7 @@ export default async function PlaygroundLayout({
                       defaultRoleDescription={playground.roleDescription}
                       defaultFeedbackStyle={playground.feedbackStyle as FeedbackStyle}
                       defaultCoachingPosture={playground.coachingPosture as CoachingPosture}
+                      defaultWelcomeMessage={playground.welcomeMessage}
                     />
                   </div>
                 </div>

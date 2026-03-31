@@ -25,6 +25,7 @@ export default async function ChatPage({
         coachingPosture: playgrounds.coachingPosture,
         disabledRuleIds: playgrounds.disabledRuleIds,
         customRules: playgrounds.customRules,
+        welcomeMessage: playgrounds.welcomeMessage,
       })
       .from(playgrounds)
       .where(eq(playgrounds.id, id))
@@ -49,11 +50,13 @@ export default async function ChatPage({
 
   return (
     <ChatPanel
+      playgroundId={id}
       chatId={chatId}
       model={playground.model}
       prompts={allPrompts}
       identityTone={identityTone}
       rulesConfig={rulesConfig}
+      welcomeMessage={playground.welcomeMessage}
       initialMessages={persistedMessages}
     />
   );

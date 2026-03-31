@@ -2,10 +2,14 @@ import {
   AIIR_COACHING_GUIDE,
   LD12_FRAMEWORK_XML,
   VALUES_FRAMEWORK_XML,
+  HOGAN_FRAMEWORK_XML,
+  HOGAN_INTERPRETATION_GUIDE,
 } from "@/lib/frameworks";
 
-export function buildFrameworkBlocks(): string {
-  return `
+export function buildFrameworkBlocks(options?: {
+  includeHogan?: boolean;
+}): string {
+  const base = `
 <knowledge type="methodology" name="AIIR Coaching Guide"
   usage="Governs your coaching approach, session structure, assessment interpretation, goal setting, and development principles. Consult this on every response to ensure your coaching is methodologically grounded.">
 ${AIIR_COACHING_GUIDE}
@@ -19,5 +23,21 @@ ${LD12_FRAMEWORK_XML}
 <knowledge type="framework" name="Values Navigator Framework"
   usage="Defines all 10 values dimensions and 26 sub-dimensions. Consult this when interpreting values assessment data or connecting coaching advice to what intrinsically motivates this leader. Values scores are motivational importance — not performance.">
 ${VALUES_FRAMEWORK_XML}
-</knowledge>`.trim();
+</knowledge>`;
+
+  if (!options?.includeHogan) {
+    return base.trim();
+  }
+
+  return `${base.trim()}
+
+<knowledge type="framework" name="Hogan Assessment Scales"
+  usage="Defines HPI (bright side), HDS (dark side), and MVPI (values) primary scales, subscales, clusters, and percentile band rules. Use exact scale names. Consult when interpreting Hogan assessment data in session context.">
+${HOGAN_FRAMEWORK_XML}
+</knowledge>
+
+<knowledge type="methodology" name="Hogan Interpretation Guide"
+  usage="Authoritative Hogan interpretation: foundations, scale narratives, HPI/HDS/MVPI integration, configural patterns, feedback delivery, and language rules. Apply when the user has Hogan data or asks about Hogan, HPI, HDS, MVPI, or the Hogan report. Do not invent Hogan scores; use session-context blocks only.">
+${HOGAN_INTERPRETATION_GUIDE}
+</knowledge>`;
 }

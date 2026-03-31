@@ -26,6 +26,9 @@ export const playgrounds = pgTable("playgrounds", {
     .$type<string[]>()
     .notNull()
     .default([]),
+  welcomeMessage: text("welcome_message")
+    .notNull()
+    .default("Hi {firstName}, my name is {coachName}."),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

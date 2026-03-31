@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -22,11 +22,13 @@ export function IdentityToneFields({
   defaultRoleDescription,
   defaultFeedbackStyle,
   defaultCoachingPosture,
+  defaultWelcomeMessage,
 }: {
   playgroundId: string;
   defaultRoleDescription: string;
   defaultFeedbackStyle: FeedbackStyle;
   defaultCoachingPosture: CoachingPosture;
+  defaultWelcomeMessage: string;
 }) {
   const [roleDescription, setRoleDescription] = useState(
     defaultRoleDescription,
@@ -35,17 +37,24 @@ export function IdentityToneFields({
     useState<FeedbackStyle>(defaultFeedbackStyle);
   const [coachingPosture, setCoachingPosture] =
     useState<CoachingPosture>(defaultCoachingPosture);
+  const [welcomeMessage, setWelcomeMessage] = useState(defaultWelcomeMessage);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setFeedbackStyle(defaultFeedbackStyle);
+  }, [defaultFeedbackStyle]);
 
   function persist(overrides: {
     roleDescription?: string;
     feedbackStyle?: FeedbackStyle;
     coachingPosture?: CoachingPosture;
+    welcomeMessage?: string;
   }) {
     const config = {
       roleDescription: overrides.roleDescription ?? roleDescription,
       feedbackStyle: overrides.feedbackStyle ?? feedbackStyle,
       coachingPosture: overrides.coachingPosture ?? coachingPosture,
+      welcomeMessage: overrides.welcomeMessage ?? welcomeMessage,
     };
     startTransition(() => {
       updatePlaygroundIdentityTone(playgroundId, config);
@@ -55,6 +64,11 @@ export function IdentityToneFields({
   function handleRoleBlur() {
     if (roleDescription.trim() === defaultRoleDescription.trim()) return;
     persist({ roleDescription });
+  }
+
+  function handleWelcomeMessageBlur() {
+    if (welcomeMessage.trim() === defaultWelcomeMessage.trim()) return;
+    persist({ welcomeMessage });
   }
 
   function handleFeedbackStyleChange(value: FeedbackStyle) {
@@ -88,6 +102,28 @@ export function IdentityToneFields({
         />
         <p className="text-xs/4 text-muted-foreground">
           Describes the coach's purpose and expertise. Injected into the system prompt to shape how the LLM introduces itself.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label
+          htmlFor="welcomeMessage"
+          className="text-sm font-medium text-foreground"
+        >
+          Welcome message
+        </label>
+        <Textarea
+          id="welcomeMessage"
+          rows={4}
+          maxLength={500}
+          value={welcomeMessage}
+          onChange={(e) => setWelcomeMessage(e.target.value)}
+          onBlur={handleWelcomeMessageBlur}
+          placeholder='e.g. Hi {firstName}, my name is {coachName}.'
+          className="min-h-0 resize-none text-sm"
+        />
+        <p className="text-xs/4 text-muted-foreground">
+          Sent automatically when a new chat starts. Use {"{firstName}"} and {"{coachName}"} as template variables.
         </p>
       </div>
 

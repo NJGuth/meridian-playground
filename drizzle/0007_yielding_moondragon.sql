@@ -1,0 +1,1 @@
+ALTER TABLE "playgrounds" ADD COLUMN "welcome_message" text DEFAULT 'Hi {firstName}, my name is {coachName}.' NOT NULL;

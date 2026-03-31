@@ -49,6 +49,7 @@ export async function updatePlaygroundIdentityTone(
     roleDescription: string;
     feedbackStyle: FeedbackStyle;
     coachingPosture: CoachingPosture;
+    welcomeMessage: string;
   },
 ) {
   if (!id) return;
@@ -59,7 +60,22 @@ export async function updatePlaygroundIdentityTone(
       roleDescription: config.roleDescription.trim(),
       feedbackStyle: config.feedbackStyle,
       coachingPosture: config.coachingPosture,
+      welcomeMessage: config.welcomeMessage.trim(),
     })
+    .where(eq(playgrounds.id, id));
+
+  revalidatePath(`/playground/${id}`);
+}
+
+export async function updatePlaygroundFeedbackStyle(
+  id: string,
+  feedbackStyle: FeedbackStyle,
+) {
+  if (!id) return;
+
+  await db
+    .update(playgrounds)
+    .set({ feedbackStyle })
     .where(eq(playgrounds.id, id));
 
   revalidatePath(`/playground/${id}`);
@@ -108,6 +124,7 @@ export async function duplicatePlayground(id: string) {
     coachingPosture: pg.coachingPosture,
     disabledRuleIds: pg.disabledRuleIds,
     customRules: pg.customRules,
+    welcomeMessage: pg.welcomeMessage,
   });
 
   revalidatePath("/dashboard/playgrounds");

@@ -3,6 +3,11 @@ import type {
   ValuesSubDimension,
   ValuesDimension,
 } from "@/lib/framework/values-definitions";
+import type {
+  HPIScale,
+  HDSScale,
+  MVPIScale,
+} from "@/lib/framework/hogan-definitions";
 
 export interface ResolvedUserProfile {
   firstName: string;
@@ -48,4 +53,54 @@ export interface ValuesProfile {
   values: EnrichedValue[];
   topMotivators: EnrichedValue[];
   lowerMotivators: EnrichedValue[];
+}
+
+export type HPIScoreLabel = "Low" | "Average" | "High";
+export type HDSScoreLabel =
+  | "No Risk"
+  | "Low Risk"
+  | "Moderate Risk"
+  | "High Risk";
+export type MVPIScoreLabel = "Low" | "Average" | "High";
+
+export interface EnrichedHPIScale {
+  scale: HPIScale;
+  percentile: number;
+  label: HPIScoreLabel;
+}
+
+export interface EnrichedHDSScale {
+  scale: HDSScale;
+  percentile: number;
+  label: HDSScoreLabel;
+}
+
+export interface EnrichedMVPIScale {
+  scale: MVPIScale;
+  percentile: number;
+  label: MVPIScoreLabel;
+}
+
+export interface HPIProfile {
+  personId: string;
+  completedAt: string;
+  scales: EnrichedHPIScale[];
+  highs: EnrichedHPIScale[];
+  lows: EnrichedHPIScale[];
+}
+
+export interface HDSProfile {
+  personId: string;
+  completedAt: string;
+  scales: EnrichedHDSScale[];
+  elevatedRisks: EnrichedHDSScale[];
+  clustersWithElevation: string[];
+}
+
+export interface MVPIProfile {
+  personId: string;
+  completedAt: string;
+  scales: EnrichedMVPIScale[];
+  topDrivers: EnrichedMVPIScale[];
+  lowerPriorities: EnrichedMVPIScale[];
 }

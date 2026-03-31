@@ -124,6 +124,14 @@ export const DEFAULT_RULES: PlaygroundRule[] = [
       "Connect values data to development advice. Disable to test LD12-only coaching.",
     text: "Use the user's values data to contextualise coaching. Where relevant, connect development advice and goal-setting to the values that most motivate this leader.",
   },
+  {
+    id: "data-no-decimals",
+    category: "data-integrity",
+    defaultActive: true,
+    description:
+      "Round all scores to whole numbers. Never display decimal places.",
+    text: "When citing any score (percentile, assessment result, or calculated value), always round to the nearest whole number. Never display decimal places. For example, a score of 9.2 should be presented as 9, and 9.7 should be presented as 10.",
+  },
   // Safety
   {
     id: "safety-no-assessment-status",

@@ -3,6 +3,11 @@
 import { db } from "@/server/db";
 import { assessments, people } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
+import {
+  HPI_SCALE_KEYS,
+  HDS_SCALE_KEYS,
+  MVPI_SCALE_KEYS,
+} from "@/lib/framework/hogan-definitions";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -157,6 +162,24 @@ function buildEmptyValues() {
   return { pctileScores };
 }
 
+function buildEmptyHoganHpi() {
+  const pctileScores: Record<string, number> = {};
+  for (const k of HPI_SCALE_KEYS) pctileScores[k] = 0;
+  return { pctileScores };
+}
+
+function buildEmptyHoganHds() {
+  const pctileScores: Record<string, number> = {};
+  for (const k of HDS_SCALE_KEYS) pctileScores[k] = 0;
+  return { pctileScores };
+}
+
+function buildEmptyHoganMvpi() {
+  const pctileScores: Record<string, number> = {};
+  for (const k of MVPI_SCALE_KEYS) pctileScores[k] = 0;
+  return { pctileScores };
+}
+
 function rand(min: number, max: number, decimals = 1) {
   const val = Math.random() * (max - min) + min;
   const factor = 10 ** decimals;
@@ -199,6 +222,24 @@ function buildRandomValues() {
   const pctileScores: Record<string, number> = {};
   for (const k of [...VALUES_KEYS, ...VALUES_THEME_KEYS])
     pctileScores[k] = randPctile();
+  return { pctileScores };
+}
+
+function buildRandomHoganHpi() {
+  const pctileScores: Record<string, number> = {};
+  for (const k of HPI_SCALE_KEYS) pctileScores[k] = randPctile();
+  return { pctileScores };
+}
+
+function buildRandomHoganHds() {
+  const pctileScores: Record<string, number> = {};
+  for (const k of HDS_SCALE_KEYS) pctileScores[k] = randPctile();
+  return { pctileScores };
+}
+
+function buildRandomHoganMvpi() {
+  const pctileScores: Record<string, number> = {};
+  for (const k of MVPI_SCALE_KEYS) pctileScores[k] = randPctile();
   return { pctileScores };
 }
 
@@ -248,6 +289,9 @@ export async function createPerson(formData: FormData) {
     { personId: person.id, type: "ld12", data: buildEmptyLd12() },
     { personId: person.id, type: "ld12_360", data: buildEmptyLd12360() },
     { personId: person.id, type: "values", data: buildEmptyValues() },
+    { personId: person.id, type: "hogan_hpi", data: buildEmptyHoganHpi() },
+    { personId: person.id, type: "hogan_hds", data: buildEmptyHoganHds() },
+    { personId: person.id, type: "hogan_mvpi", data: buildEmptyHoganMvpi() },
   ]);
 
   revalidatePath("/dashboard/data");
@@ -337,6 +381,9 @@ export async function generateRandomAssessments(personId: string) {
     { personId, type: "ld12", data: buildRandomLd12() },
     { personId, type: "ld12_360", data: buildRandomLd12360() },
     { personId, type: "values", data: buildRandomValues() },
+    { personId, type: "hogan_hpi", data: buildRandomHoganHpi() },
+    { personId, type: "hogan_hds", data: buildRandomHoganHds() },
+    { personId, type: "hogan_mvpi", data: buildRandomHoganMvpi() },
   ]);
 
   revalidatePath(`/dashboard/data/${personId}`);

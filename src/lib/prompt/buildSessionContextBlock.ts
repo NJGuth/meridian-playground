@@ -4,8 +4,18 @@ export function buildSessionContextBlock(params: {
   user: ResolvedUserProfile;
   ld12XML: string | null;
   valuesXML: string | null;
+  hoganHpiXML: string | null;
+  hoganHdsXML: string | null;
+  hoganMvpiXML: string | null;
 }): string {
-  const { user, ld12XML, valuesXML } = params;
+  const {
+    user,
+    ld12XML,
+    valuesXML,
+    hoganHpiXML,
+    hoganHdsXML,
+    hoganMvpiXML,
+  } = params;
 
   const ld12Block =
     ld12XML ??
@@ -21,6 +31,24 @@ export function buildSessionContextBlock(params: {
   No Values Navigator data available for this user.
 </values-assessment-data>`;
 
+  const hpiBlock =
+    hoganHpiXML ??
+    `<hogan-assessment-data instrument="HPI" status="not-completed">
+  No Hogan HPI (Bright Side) data for this user. Do not invent HPI scores.
+</hogan-assessment-data>`;
+
+  const hdsBlock =
+    hoganHdsXML ??
+    `<hogan-assessment-data instrument="HDS" status="not-completed">
+  No Hogan HDS (Dark Side) data for this user. Do not invent HDS scores.
+</hogan-assessment-data>`;
+
+  const mvpiBlock =
+    hoganMvpiXML ??
+    `<hogan-assessment-data instrument="MVPI" status="not-completed">
+  No Hogan MVPI (Inside / values) data for this user. Do not invent MVPI scores.
+</hogan-assessment-data>`;
+
   return `<session-context>
   <user-profile
     firstName="${user.firstName}"
@@ -34,5 +62,11 @@ export function buildSessionContextBlock(params: {
   ${ld12Block}
 
   ${valuesBlock}
+
+  ${hpiBlock}
+
+  ${hdsBlock}
+
+  ${mvpiBlock}
 </session-context>`;
 }
