@@ -36,11 +36,13 @@ export function FeedbackStyleSelector({
           return (
             <Button
               key={option.value}
-              variant={isSelected ? "default" : isCurrent ? "secondary" : "outline"}
+              variant={
+                isSelected ? "default" : isCurrent ? "secondary" : "outline"
+              }
               size="sm"
               disabled={!!selected && !isSelected}
               onClick={() => handleSelect(option.value)}
-              className="gap-1.5"
+              className="gap-2"
             >
               {isSelected && <Check className="size-3.5" />}
               {option.label}
