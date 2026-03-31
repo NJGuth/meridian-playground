@@ -21,6 +21,14 @@ import {
   VALUES_DIMENSIONS,
   VALUES_DIMENSION_BY_KEY,
 } from "@/lib/framework/values-definitions";
+import {
+  HPI_SCALE_KEYS,
+  HDS_SCALE_KEYS,
+  MVPI_SCALE_KEYS,
+  HPI_SCALE_BY_KEY,
+  HDS_SCALE_BY_KEY,
+  MVPI_SCALE_BY_KEY,
+} from "@/lib/framework/hogan-definitions";
 
 type ScoreValue = number | null;
 type MultiRaterScore = {
@@ -535,6 +543,143 @@ function Ld12360Panel({ data }: { data: Record<string, unknown> }) {
   );
 }
 
+function getHoganHpiDefinition(key: string): DefinitionInfo | null {
+  const scale = HPI_SCALE_BY_KEY.get(key as (typeof HPI_SCALE_KEYS)[number]);
+  if (!scale) return null;
+  return {
+    name: scale.title,
+    breadcrumb: `HPI · ${scale.insightRegarding} · FFM: ${scale.ffmFactor}`,
+    description: `Lower-score side: ${scale.lowScoreSummary} Higher-score side: ${scale.highScoreSummary}`,
+  };
+}
+
+function getHoganHdsDefinition(key: string): DefinitionInfo | null {
+  const scale = HDS_SCALE_BY_KEY.get(key as (typeof HDS_SCALE_KEYS)[number]);
+  if (!scale) return null;
+  return {
+    name: scale.title,
+    breadcrumb: `HDS · ${scale.cluster}`,
+    description: `Everyday strength: ${scale.everydayStrength}. When overused: ${scale.overusedRisk}.`,
+  };
+}
+
+function getHoganMvpiDefinition(key: string): DefinitionInfo | null {
+  const scale = MVPI_SCALE_BY_KEY.get(key as (typeof MVPI_SCALE_KEYS)[number]);
+  if (!scale) return null;
+  return {
+    name: scale.title,
+    breadcrumb: `MVPI · ${scale.cluster}`,
+    description: scale.highDefinition,
+  };
+}
+
+function mergeHoganPctile<T extends string>(
+  raw: Record<string, number>,
+  keys: readonly T[],
+): Record<string, number> {
+  const m = { ...raw };
+  for (const k of keys) {
+    if (m[k] == null) m[k] = 0;
+  }
+  return m;
+}
+
+function HoganHpiPanel({ data }: { data: Record<string, unknown> }) {
+  const [pctile, setPctile] = useState(() =>
+    mergeHoganPctile(
+      { ...((data.pctileScores ?? {}) as Record<string, number>) },
+      HPI_SCALE_KEYS,
+    ),
+  );
+  const [sheetInfo, setSheetInfo] = useState<DefinitionInfo | null>(null);
+
+  const handleLabelClick = (key: string) => {
+    const info = getHoganHpiDefinition(key);
+    if (info) setSheetInfo(info);
+  };
+
+  return (
+    <div className="flex flex-col gap-8">
+      <p className="text-sm text-muted-foreground">
+        Hogan Personality Inventory (HPI) — “Bright Side.” Percentiles vs
+        working adults; low/average/high are not good or bad.
+      </p>
+      <ScoreSection
+        title="Primary scales"
+        keys={[...HPI_SCALE_KEYS]}
+        scores={pctile}
+        onChange={(k, v) => setPctile((prev) => ({ ...prev, [k]: v }))}
+        onLabelClick={handleLabelClick}
+      />
+      <DefinitionSheet info={sheetInfo} onClose={() => setSheetInfo(null)} />
+    </div>
+  );
+}
+
+function HoganHdsPanel({ data }: { data: Record<string, unknown> }) {
+  const [pctile, setPctile] = useState(() =>
+    mergeHoganPctile(
+      { ...((data.pctileScores ?? {}) as Record<string, number>) },
+      HDS_SCALE_KEYS,
+    ),
+  );
+  const [sheetInfo, setSheetInfo] = useState<DefinitionInfo | null>(null);
+
+  const handleLabelClick = (key: string) => {
+    const info = getHoganHdsDefinition(key);
+    if (info) setSheetInfo(info);
+  };
+
+  return (
+    <div className="flex flex-col gap-8">
+      <p className="text-sm text-muted-foreground">
+        Hogan Development Survey (HDS) — “Dark Side.” Higher percentiles mean
+        greater likelihood of risk behaviors under stress.
+      </p>
+      <ScoreSection
+        title="Primary scales"
+        keys={[...HDS_SCALE_KEYS]}
+        scores={pctile}
+        onChange={(k, v) => setPctile((prev) => ({ ...prev, [k]: v }))}
+        onLabelClick={handleLabelClick}
+      />
+      <DefinitionSheet info={sheetInfo} onClose={() => setSheetInfo(null)} />
+    </div>
+  );
+}
+
+function HoganMvpiPanel({ data }: { data: Record<string, unknown> }) {
+  const [pctile, setPctile] = useState(() =>
+    mergeHoganPctile(
+      { ...((data.pctileScores ?? {}) as Record<string, number>) },
+      MVPI_SCALE_KEYS,
+    ),
+  );
+  const [sheetInfo, setSheetInfo] = useState<DefinitionInfo | null>(null);
+
+  const handleLabelClick = (key: string) => {
+    const info = getHoganMvpiDefinition(key);
+    if (info) setSheetInfo(info);
+  };
+
+  return (
+    <div className="flex flex-col gap-8">
+      <p className="text-sm text-muted-foreground">
+        Motives, Values, Preferences Inventory (MVPI) — “Inside.” Values and
+        motives; high/low reflect what drives the person, not performance.
+      </p>
+      <ScoreSection
+        title="Primary scales"
+        keys={[...MVPI_SCALE_KEYS]}
+        scores={pctile}
+        onChange={(k, v) => setPctile((prev) => ({ ...prev, [k]: v }))}
+        onLabelClick={handleLabelClick}
+      />
+      <DefinitionSheet info={sheetInfo} onClose={() => setSheetInfo(null)} />
+    </div>
+  );
+}
+
 function ValuesPanel({ data }: { data: Record<string, unknown> }) {
   const [pctile, setPctile] = useState(
     () => ({ ...(data.pctileScores ?? {}) }) as Record<string, number>,
@@ -573,11 +718,20 @@ export function AssessmentPanel({
   view,
   data,
 }: {
-  view: "ld12" | "ld12_360" | "values";
+  view:
+    | "ld12"
+    | "ld12_360"
+    | "values"
+    | "hogan_hpi"
+    | "hogan_hds"
+    | "hogan_mvpi";
   data: {
     ld12?: Record<string, unknown>;
     ld12_360?: Record<string, unknown>;
     values?: Record<string, unknown>;
+    hogan_hpi?: Record<string, unknown>;
+    hogan_hds?: Record<string, unknown>;
+    hogan_mvpi?: Record<string, unknown>;
   };
 }) {
   switch (view) {
@@ -598,6 +752,24 @@ export function AssessmentPanel({
         <ValuesPanel data={data.values} />
       ) : (
         <EmptyState label="Values" />
+      );
+    case "hogan_hpi":
+      return data.hogan_hpi ? (
+        <HoganHpiPanel data={data.hogan_hpi} />
+      ) : (
+        <EmptyState label="Hogan HPI" />
+      );
+    case "hogan_hds":
+      return data.hogan_hds ? (
+        <HoganHdsPanel data={data.hogan_hds} />
+      ) : (
+        <EmptyState label="Hogan HDS" />
+      );
+    case "hogan_mvpi":
+      return data.hogan_mvpi ? (
+        <HoganMvpiPanel data={data.hogan_mvpi} />
+      ) : (
+        <EmptyState label="Hogan MVPI" />
       );
   }
 }

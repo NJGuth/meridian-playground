@@ -18,6 +18,9 @@ export default async function DataDetailPage({
   const ld12 = person.assessments.find((a) => a.type === "ld12");
   const ld12_360 = person.assessments.find((a) => a.type === "ld12_360");
   const values = person.assessments.find((a) => a.type === "values");
+  const hogan_hpi = person.assessments.find((a) => a.type === "hogan_hpi");
+  const hogan_hds = person.assessments.find((a) => a.type === "hogan_hds");
+  const hogan_mvpi = person.assessments.find((a) => a.type === "hogan_mvpi");
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -46,6 +49,9 @@ export default async function DataDetailPage({
           ld12: ld12?.data as Record<string, unknown> | undefined,
           ld12_360: ld12_360?.data as Record<string, unknown> | undefined,
           values: values?.data as Record<string, unknown> | undefined,
+          hogan_hpi: hogan_hpi?.data as Record<string, unknown> | undefined,
+          hogan_hds: hogan_hds?.data as Record<string, unknown> | undefined,
+          hogan_mvpi: hogan_mvpi?.data as Record<string, unknown> | undefined,
         }}
       />
     </div>

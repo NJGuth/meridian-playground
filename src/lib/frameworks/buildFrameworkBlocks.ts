@@ -37,7 +37,7 @@ ${HOGAN_FRAMEWORK_XML}
 </knowledge>
 
 <knowledge type="methodology" name="Hogan Interpretation Guide"
-  usage="Authoritative Hogan interpretation: foundations, scale narratives, HPI/HDS/MVPI integration, configural patterns, feedback delivery, and language rules. Apply when the user has Hogan data or asks about Hogan, HPI, HDS, MVPI, or the Hogan report. Do not invent Hogan scores; use session-context blocks only.">
+  usage="Full Hogan interpretation manual (same content as the project's hogan-guide). Use for every Hogan-related response when session-context includes hogan-assessment-results: foundations, scale narratives, HPI/HDS/MVPI integration, configural patterns, feedback delivery, and language rules. Pair with this user's percentiles inside &lt;hogan-assessment-results&gt;; never invent scores.">
 ${HOGAN_INTERPRETATION_GUIDE}
 </knowledge>`;
 }

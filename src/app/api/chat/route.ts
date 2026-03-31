@@ -96,7 +96,7 @@ function assembleSystemPrompt(params: {
   }
 
   parts.push(
-    buildKnowledgePriorityBlock(hasExamples),
+    buildKnowledgePriorityBlock(hasExamples, includeHoganKnowledge),
     buildRulesBlock({ user, identityTone, rulesConfig }),
     buildOutputFormattingBlock(hasExamples),
   );

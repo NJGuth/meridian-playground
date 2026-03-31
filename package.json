@@ -10,7 +10,8 @@
     "format": "biome format --write",
     "db:generate": "npx tsx --env-file=.env.local node_modules/.bin/drizzle-kit generate",
     "db:migrate": "npx tsx --env-file=.env.local src/server/db/migrate.ts",
-    "db:seed": "npx tsx --env-file=.env.local src/server/db/seed.ts"
+    "db:seed": "npx tsx --env-file=.env.local src/server/db/seed.ts",
+    "db:seed:hogan": "npx tsx --env-file=.env.local src/server/db/upsert-hogan-for-seed-user.ts"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.118",

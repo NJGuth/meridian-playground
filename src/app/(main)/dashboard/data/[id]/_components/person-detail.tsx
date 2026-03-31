@@ -13,12 +13,21 @@ import {
 } from "@/server/actions/data";
 import { AssessmentPanel } from "./assessment-panel";
 
-type AssessmentView = "ld12" | "ld12_360" | "values";
+type AssessmentView =
+  | "ld12"
+  | "ld12_360"
+  | "values"
+  | "hogan_hpi"
+  | "hogan_hds"
+  | "hogan_mvpi";
 
 const NAV_ITEMS: { key: AssessmentView; label: string }[] = [
   { key: "ld12", label: "LD12" },
   { key: "ld12_360", label: "LD12-360" },
   { key: "values", label: "Values" },
+  { key: "hogan_hpi", label: "Hogan HPI" },
+  { key: "hogan_hds", label: "Hogan HDS" },
+  { key: "hogan_mvpi", label: "Hogan MVPI" },
 ];
 
 function EditableField({
@@ -90,6 +99,9 @@ export function PersonDetail({
     ld12?: Record<string, unknown>;
     ld12_360?: Record<string, unknown>;
     values?: Record<string, unknown>;
+    hogan_hpi?: Record<string, unknown>;
+    hogan_hds?: Record<string, unknown>;
+    hogan_mvpi?: Record<string, unknown>;
   };
 }) {
   const [activeView, setActiveView] = useState<AssessmentView>("ld12");

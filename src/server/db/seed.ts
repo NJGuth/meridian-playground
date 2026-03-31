@@ -1,5 +1,10 @@
 import { db } from "./index";
 import { assessments, people } from "./schema";
+import {
+  hoganHdsSeedData,
+  hoganHpiSeedData,
+  hoganMvpiSeedData,
+} from "./hogan-seed-payloads";
 
 const ld12Data = {
   archetypeScores: {
@@ -234,49 +239,6 @@ const ld12_360Data = {
   },
 };
 
-const hoganHpiData = {
-  pctileScores: {
-    Adjustment: 55,
-    Ambition: 72,
-    Sociability: 48,
-    Interpersonal_Sensitivity: 61,
-    Prudence: 32,
-    Inquisitive: 78,
-    Learning_Approach: 65,
-  },
-};
-
-const hoganHdsData = {
-  pctileScores: {
-    Excitable: 35,
-    Skeptical: 62,
-    Cautious: 45,
-    Reserved: 58,
-    Leisurely: 52,
-    Bold: 55,
-    Mischievous: 48,
-    Colorful: 41,
-    Imaginative: 72,
-    Diligent: 76,
-    Dutiful: 44,
-  },
-};
-
-const hoganMvpiData = {
-  pctileScores: {
-    Recognition: 55,
-    Power: 82,
-    Hedonism: 38,
-    Altruistic: 45,
-    Affiliation: 62,
-    Tradition: 41,
-    Security: 48,
-    Commerce: 55,
-    Aesthetics: 58,
-    Science: 71,
-  },
-};
-
 const valuesData = {
   pctileScores: {
     Financial_Security: 99.07407407407408,
@@ -330,9 +292,9 @@ async function seed() {
     { personId: person.id, type: "ld12", data: ld12Data },
     { personId: person.id, type: "ld12_360", data: ld12_360Data },
     { personId: person.id, type: "values", data: valuesData },
-    { personId: person.id, type: "hogan_hpi", data: hoganHpiData },
-    { personId: person.id, type: "hogan_hds", data: hoganHdsData },
-    { personId: person.id, type: "hogan_mvpi", data: hoganMvpiData },
+    { personId: person.id, type: "hogan_hpi", data: hoganHpiSeedData },
+    { personId: person.id, type: "hogan_hds", data: hoganHdsSeedData },
+    { personId: person.id, type: "hogan_mvpi", data: hoganMvpiSeedData },
   ]);
 
   console.log(

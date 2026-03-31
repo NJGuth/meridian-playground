@@ -49,6 +49,18 @@ export function buildSessionContextBlock(params: {
   No Hogan MVPI (Inside / values) data for this user. Do not invent MVPI scores.
 </hogan-assessment-data>`;
 
+  const hoganResultsBlock = `<hogan-assessment-results
+    role="same_as_ld12_for_hogan"
+    interpretation_reference="Hogan Interpretation Guide"
+    usage="This user's Hogan percentiles (HPI, HDS, MVPI) when present. Treat like LD12: ground coaching in these numbers only. For how to discuss Hogan—reputation not identity, bands, HPI/HDS/MVPI integration, configural patterns, probabilistic language, and feedback delivery—follow the 'Hogan Interpretation Guide' and 'Hogan Assessment Scales' knowledge blocks in the system prompt. Do not contradict those guides; do not invent scores not shown below."
+  >
+${hpiBlock}
+
+${hdsBlock}
+
+${mvpiBlock}
+  </hogan-assessment-results>`;
+
   return `<session-context>
   <user-profile
     firstName="${user.firstName}"
@@ -63,10 +75,6 @@ export function buildSessionContextBlock(params: {
 
   ${valuesBlock}
 
-  ${hpiBlock}
-
-  ${hdsBlock}
-
-  ${mvpiBlock}
+${hoganResultsBlock}
 </session-context>`;
 }
