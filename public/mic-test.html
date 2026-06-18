@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mic Diagnostic</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0;
+        font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: #0a0a0a;
+        color: #e5e5e5;
+        padding: 24px;
+      }
+      h1 { font-size: 16px; margin: 0 0 16px; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+      button {
+        background: #1a1a1a;
+        color: #fff;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 8px 14px;
+        cursor: pointer;
+        font: inherit;
+      }
+      button:hover { background: #262626; }
+      .card {
+        border: 1px solid #262626;
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 12px;
+        background: #111;
+      }
+      .k { color: #888; }
+      .ok { color: #4ade80; }
+      .bad { color: #f87171; }
+      .warn { color: #fbbf24; }
+      pre { white-space: pre-wrap; word-break: break-word; margin: 0; }
+      #log { max-height: 320px; overflow: auto; }
+      .big { font-size: 15px; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <h1>Microphone Diagnostic — same origin as the app</h1>
+    <div class="row">
+      <button id="request">Request microphone</button>
+      <button id="enumerate">List devices</button>
+      <button id="permState">Check permission state</button>
+      <button id="clear">Clear log</button>
+    </div>
+
+    <div class="card" id="env"></div>
+    <div class="card" id="verdict"></div>
+    <div class="card"><div class="k">Log</div><pre id="log"></pre></div>
+
+    <script>
+      const logEl = document.getElementById("log");
+      const verdictEl = document.getElementById("verdict");
+      const ts = () => new Date().toLocaleTimeString();
+      function log(msg) {
+        logEl.textContent += `[${ts()}] ${msg}\n`;
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+      function setVerdict(html) {
+        verdictEl.innerHTML = `<div class="k">Verdict</div><div class="big">${html}</div>`;
+      }
+
+      function renderEnv() {
+        const md = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+        document.getElementById("env").innerHTML = [
+          `<div class="k">Environment</div>`,
+          `origin: ${location.origin}`,
+          `isSecureContext: <span class="${window.isSecureContext ? "ok" : "bad"}">${window.isSecureContext}</span>`,
+          `mediaDevices.getUserMedia available: <span class="${md ? "ok" : "bad"}">${md}</span>`,
+          `userAgent: ${navigator.userAgent}`,
+        ].join("<br/>");
+        if (!window.isSecureContext) {
+          setVerdict(
+            `<span class="bad">Insecure context.</span> getUserMedia is blocked unless the page is https or on localhost/127.0.0.1. Open the app via http://localhost:3000 (not a LAN IP like 192.168.x.x).`,
+          );
+        }
+      }
+
+      async function checkPermissionState() {
+        if (!navigator.permissions) {
+          log("navigator.permissions not supported");
+          return;
+        }
+        try {
+          const status = await navigator.permissions.query({ name: "microphone" });
+          log(`permissions.query(microphone).state = ${status.state}`);
+          if (status.state === "denied") {
+            setVerdict(
+              `<span class="bad">Permission is DENIED for this origin.</span> The browser is blocking the mic. Reset it in site settings (Arc: lock icon in the address bar → Microphone → Allow), then reload. If it stays denied, check macOS System Settings → Privacy & Security → Microphone → enable for Arc.`,
+            );
+          }
+        } catch (e) {
+          log(`permissions.query failed: ${e.name}: ${e.message}`);
+        }
+      }
+
+      async function enumerate(tag) {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const inputs = devices.filter((d) => d.kind === "audioinput");
+          log(`${tag} audioinput devices: ${inputs.length}`);
+          inputs.forEach((d, i) =>
+            log(`  [${i}] id=${d.deviceId ? d.deviceId.slice(0, 8) + "…" : "(empty)"} label="${d.label || "(hidden until granted)"}"`),
+          );
+          return inputs;
+        } catch (e) {
+          log(`enumerateDevices failed: ${e.name}: ${e.message}`);
+          return [];
+        }
+      }
+
+      async function request() {
+        log("calling getUserMedia({ audio: true }) …");
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const track = stream.getAudioTracks()[0];
+          log(`SUCCESS — track: "${track.label}" state=${track.readyState}`);
+          setVerdict(
+            `<span class="ok">Microphone access GRANTED.</span> Device: ${track.label}. The browser/OS layer is fine — if the app still fails, the bug is in app code.`,
+          );
+          await enumerate("after grant");
+          stream.getTracks().forEach((t) => t.stop());
+        } catch (e) {
+          log(`FAILED — ${e.name}: ${e.message}`);
+          let hint = "";
+          switch (e.name) {
+            case "NotAllowedError":
+              hint = /system/i.test(e.message)
+                ? "Blocked by the OS. macOS System Settings → Privacy & Security → Microphone → enable Arc, then fully quit & reopen Arc."
+                : "Blocked at the site level. Click the address-bar site controls → Microphone → Allow, then reload. If still blocked, check macOS Privacy → Microphone → Arc.";
+              break;
+            case "NotFoundError":
+            case "DevicesNotFoundError":
+              hint = "No microphone device found by the browser.";
+              break;
+            case "NotReadableError":
+            case "TrackStartError":
+              hint = "The OS/another app is holding the mic, or the OS denied access. Close other apps using the mic; check macOS Privacy → Microphone → Arc.";
+              break;
+            case "OverconstrainedError":
+              hint = "The requested deviceId constraint can't be satisfied. A selected device may be unplugged.";
+              break;
+            case "SecurityError":
+              hint = "Insecure context — must be https or localhost.";
+              break;
+            default:
+              hint = "Unexpected error.";
+          }
+          setVerdict(`<span class="bad">${e.name}</span> — ${hint}`);
+        }
+      }
+
+      document.getElementById("request").onclick = request;
+      document.getElementById("enumerate").onclick = () => enumerate("manual");
+      document.getElementById("permState").onclick = checkPermissionState;
+      document.getElementById("clear").onclick = () => (logEl.textContent = "");
+
+      renderEnv();
+      checkPermissionState();
+      enumerate("on load");
+    </script>
+  </body>
+</html>

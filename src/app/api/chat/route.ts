@@ -1,52 +1,54 @@
-import { streamText, tool, type UIMessage, convertToModelMessages } from "ai";
+import { convertToModelMessages, streamText, tool, type UIMessage } from "ai";
 import { z } from "zod";
-import { getAllPrompts } from "@/server/actions/prompt";
 import {
-  IDENTITY_TONE_DEFAULTS,
+  buildLD12Profile,
+  type LD12Thresholds,
+  serializeLD12ProfileToXML,
+} from "@/lib/assessment/enrichment";
+import {
+  buildHDSProfile,
+  buildHPIProfile,
+  buildMVPIProfile,
+  serializeHDSProfileToXML,
+  serializeHPIProfileToXML,
+  serializeMVPIProfileToXML,
+} from "@/lib/assessment/hoganEnrichment";
+import type { ResolvedUserProfile } from "@/lib/assessment/types";
+import {
+  buildValuesProfile,
+  serializeValuesProfileToXML,
+  type ValuesThresholds,
+} from "@/lib/assessment/valuesEnrichment";
+import { buildFrameworkBlocks } from "@/lib/frameworks/buildFrameworkBlocks";
+import { developmentPlanSchema } from "@/lib/plan/schema";
+import { buildCurrentPlanBlock } from "@/lib/prompt/buildCurrentPlanBlock";
+import { buildExamplesBlock } from "@/lib/prompt/buildExamplesBlock";
+import { buildIdentityBlock } from "@/lib/prompt/buildIdentityBlock";
+import { buildKnowledgePriorityBlock } from "@/lib/prompt/buildKnowledgePriorityBlock";
+import { buildOutputFormattingBlock } from "@/lib/prompt/buildOutputFormattingBlock";
+import { buildRulesBlock } from "@/lib/prompt/buildRulesBlock";
+import { buildSessionContextBlock } from "@/lib/prompt/buildSessionContextBlock";
+import { buildToneBlock } from "@/lib/prompt/buildToneBlock";
+import { buildWelcomeBlock } from "@/lib/prompt/buildWelcomeBlock";
+import {
   FEEDBACK_STYLE_OPTIONS,
+  IDENTITY_TONE_DEFAULTS,
   type IdentityToneConfig,
 } from "@/lib/types/identity-tone";
 import {
   RULES_CONFIG_DEFAULTS,
   type RulesConfig,
 } from "@/lib/types/playground-rules";
-import { buildFrameworkBlocks } from "@/lib/frameworks/buildFrameworkBlocks";
-import { buildIdentityBlock } from "@/lib/prompt/buildIdentityBlock";
-import { buildToneBlock } from "@/lib/prompt/buildToneBlock";
-import { buildWelcomeBlock } from "@/lib/prompt/buildWelcomeBlock";
-import { buildSessionContextBlock } from "@/lib/prompt/buildSessionContextBlock";
-import { buildKnowledgePriorityBlock } from "@/lib/prompt/buildKnowledgePriorityBlock";
-import { buildRulesBlock } from "@/lib/prompt/buildRulesBlock";
-import { buildOutputFormattingBlock } from "@/lib/prompt/buildOutputFormattingBlock";
-import { buildExamplesBlock } from "@/lib/prompt/buildExamplesBlock";
 import {
-  fetchPersonForChat,
-  fetchLD12Assessment,
-  fetchValuesAssessment,
-  fetchHPIAssessment,
   fetchHDSAssessment,
+  fetchHPIAssessment,
+  fetchLD12Assessment,
   fetchMVPIAssessment,
+  fetchPersonForChat,
+  fetchValuesAssessment,
 } from "@/server/actions/assessment";
-import {
-  buildLD12Profile,
-  serializeLD12ProfileToXML,
-  type LD12Thresholds,
-} from "@/lib/assessment/enrichment";
-import {
-  buildValuesProfile,
-  serializeValuesProfileToXML,
-  type ValuesThresholds,
-} from "@/lib/assessment/valuesEnrichment";
-import {
-  buildHPIProfile,
-  buildHDSProfile,
-  buildMVPIProfile,
-  serializeHPIProfileToXML,
-  serializeHDSProfileToXML,
-  serializeMVPIProfileToXML,
-} from "@/lib/assessment/hoganEnrichment";
+import { getAllPrompts } from "@/server/actions/prompt";
 import { getScoringConfig } from "@/server/actions/scoring";
-import type { ResolvedUserProfile } from "@/lib/assessment/types";
 
 function assembleSystemPrompt(params: {
   identityTone: IdentityToneConfig;
@@ -60,6 +62,7 @@ function assembleSystemPrompt(params: {
   hoganMvpiXML: string | null;
   includeHoganKnowledge: boolean;
   hasExamples: boolean;
+  currentPlanMarkdown: string | null;
 }): string {
   const {
     identityTone,
@@ -73,6 +76,7 @@ function assembleSystemPrompt(params: {
     hoganMvpiXML,
     includeHoganKnowledge,
     hasExamples,
+    currentPlanMarkdown,
   } = params;
 
   const parts: string[] = [
@@ -95,6 +99,11 @@ function assembleSystemPrompt(params: {
     );
   }
 
+  const planBlock = buildCurrentPlanBlock(currentPlanMarkdown);
+  if (planBlock) {
+    parts.push(planBlock);
+  }
+
   parts.push(
     buildKnowledgePriorityBlock(hasExamples, includeHoganKnowledge),
     buildRulesBlock({ user, identityTone, rulesConfig }),
@@ -112,6 +121,7 @@ export async function POST(req: Request) {
     rulesConfig,
     personId,
     welcomeMessage,
+    currentPlanMarkdown,
   }: {
     messages: UIMessage[];
     model?: string;
@@ -119,6 +129,7 @@ export async function POST(req: Request) {
     rulesConfig?: RulesConfig;
     personId?: string;
     welcomeMessage?: string;
+    currentPlanMarkdown?: string;
   } = await req.json();
 
   const config: IdentityToneConfig = identityTone ?? IDENTITY_TONE_DEFAULTS;
@@ -250,6 +261,7 @@ export async function POST(req: Request) {
       hoganMvpiXML,
       includeHoganKnowledge,
       hasExamples,
+      currentPlanMarkdown: currentPlanMarkdown ?? null,
     }),
   ];
 
@@ -280,6 +292,11 @@ export async function POST(req: Request) {
             .enum(feedbackStyleValues)
             .describe("The currently active feedback style"),
         }),
+      }),
+      createDevelopmentPlan: tool({
+        description:
+          "Create a structured Strategic Development Plan for the user. Call this only when the user explicitly asks you to create, draft, or build a development plan. Ground every goal in the user's LD12 profile and a named LD12 skill, and follow the SMART structure from the coaching guide. To refine or discuss an EXISTING plan, do not call this tool again - reference the current plan and suggest changes conversationally.",
+        inputSchema: developmentPlanSchema,
       }),
     },
     providerOptions: {

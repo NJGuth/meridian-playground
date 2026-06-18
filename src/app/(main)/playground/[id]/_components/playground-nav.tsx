@@ -12,7 +12,7 @@ export function PlaygroundNav({ id }: { id: string }) {
   return (
     <div className="flex items-center gap-2 py-1">
       <Button variant="secondary" size="icon" className="size-9" asChild>
-        <Link href="/dashboard/playgrounds">
+        <Link href="/hub">
           <Home />
         </Link>
       </Button>

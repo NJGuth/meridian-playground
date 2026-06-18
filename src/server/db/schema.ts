@@ -22,10 +22,7 @@ export const playgrounds = pgTable("playgrounds", {
     .$type<string[]>()
     .notNull()
     .default([]),
-  customRules: jsonb("custom_rules")
-    .$type<string[]>()
-    .notNull()
-    .default([]),
+  customRules: jsonb("custom_rules").$type<string[]>().notNull().default([]),
   welcomeMessage: text("welcome_message")
     .notNull()
     .default("Hi {firstName}, my name is {coachName}."),
@@ -99,6 +96,27 @@ export const messages = pgTable("messages", {
   parts: jsonb("parts").$type<unknown[]>().notNull(),
   metadata: jsonb("metadata").$type<Record<string, unknown>>(),
   createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const developmentPlans = pgTable("development_plans", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  chatId: uuid("chat_id")
+    .notNull()
+    .references(() => chats.id, { onDelete: "cascade" }),
+  personId: uuid("person_id").references(() => people.id, {
+    onDelete: "set null",
+  }),
+  title: text("title").notNull().default(""),
+  summary: text("summary").notNull().default(""),
+  schemaJson: jsonb("schema_json").notNull(),
+  docJson: jsonb("doc_json").notNull(),
+  docMarkdown: text("doc_markdown").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
 });

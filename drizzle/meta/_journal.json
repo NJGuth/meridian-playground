@@ -57,6 +57,13 @@
       "when": 1774371283538,
       "tag": "0007_yielding_moondragon",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780322129695,
+      "tag": "0008_previous_winter_soldier",
+      "breakpoints": true
     }
   ]
 }

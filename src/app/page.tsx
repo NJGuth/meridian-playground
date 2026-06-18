@@ -18,9 +18,14 @@ export default function Home() {
           </Button>
         </Show>
         <Show when="signed-in">
-          <Button asChild size="lg">
-            <Link href="/dashboard">Go to Dashboard</Link>
-          </Button>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button asChild size="lg">
+              <Link href="/hub">Concept Hub</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href="/dashboard">Dashboard</Link>
+            </Button>
+          </div>
         </Show>
       </main>
     </div>

@@ -2,6 +2,7 @@ import { UserButton } from "@clerk/nextjs";
 import { NavMenu } from "@/components/layout/nav-menu";
 
 const dashboardNav = [
+  { href: "/hub", label: "Concepts" },
   { href: "/dashboard/playgrounds", label: "Playgrounds" },
   { href: "/dashboard/prompts", label: "Prompts" },
   { href: "/dashboard/data", label: "Data" },

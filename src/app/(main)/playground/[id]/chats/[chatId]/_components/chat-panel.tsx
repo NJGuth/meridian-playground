@@ -1,45 +1,53 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
+import type { UIMessage } from "ai";
 import {
   DefaultChatTransport,
   lastAssistantMessageIsCompleteWithToolCalls,
 } from "ai";
-import type { UIMessage } from "ai";
-import { ArrowUp, Square, MessageSquareText } from "lucide-react";
-import type { IdentityToneConfig, FeedbackStyle } from "@/lib/types/identity-tone";
-import type { RulesConfig } from "@/lib/types/playground-rules";
+import { ArrowUp, MessageSquareText, Square } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePersonId } from "@/app/(main)/playground/[id]/_components/person-context";
-import { saveMessage } from "@/server/actions/message";
-import { updatePlaygroundFeedbackStyle } from "@/server/actions/playground";
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "@/components/ai-elements/reasoning";
 import { Button } from "@/components/ui/button";
 import {
-  ChatContainerRoot,
   ChatContainerContent,
+  ChatContainerRoot,
   ChatContainerScrollAnchor,
 } from "@/components/ui/chat-container";
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Message, MessageContent } from "@/components/ui/message";
 import {
   PromptInput,
-  PromptInputTextarea,
-  PromptInputActions,
   PromptInputAction,
+  PromptInputActions,
+  PromptInputTextarea,
 } from "@/components/ui/prompt-input";
-import {
-  CommandDialog,
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from "@/components/ui/command";
-import {
-  Reasoning,
-  ReasoningTrigger,
-  ReasoningContent,
-} from "@/components/ai-elements/reasoning";
+import type { DevelopmentPlan } from "@/lib/plan/schema";
+import { planSchemaToMarkdown } from "@/lib/plan/to-markdown";
+import type {
+  FeedbackStyle,
+  IdentityToneConfig,
+} from "@/lib/types/identity-tone";
+import type { RulesConfig } from "@/lib/types/playground-rules";
+import { saveMessage } from "@/server/actions/message";
+import { createDevelopmentPlan } from "@/server/actions/plan";
+import { updatePlaygroundFeedbackStyle } from "@/server/actions/playground";
+import { DevelopmentPlanCard } from "./development-plan-card";
+import { DevelopmentPlanThinking } from "./development-plan-thinking";
 import { FeedbackStyleSelector } from "./feedback-style-selector";
 import { WaitingIndicator } from "./waiting-indicator";
 
@@ -50,6 +58,14 @@ interface ToolPart {
   toolCallId: string;
   state: string;
   input?: { currentStyle?: string };
+}
+
+interface PlanToolPart {
+  type: string;
+  toolCallId: string;
+  state: string;
+  input?: DevelopmentPlan;
+  output?: { planId: string; title: string; summary?: string };
 }
 
 type PromptRecord = {
@@ -73,9 +89,7 @@ function MessageParts({
   const reasoningParts = message.parts.filter(
     (part) => part.type === "reasoning",
   );
-  const reasoningText = reasoningParts
-    .map((part) => part.text)
-    .join("\n\n");
+  const reasoningText = reasoningParts.map((part) => part.text).join("\n\n");
   const hasReasoning = reasoningParts.length > 0;
 
   const lastPart = message.parts.at(-1);
@@ -89,6 +103,10 @@ function MessageParts({
 
   const toolParts = message.parts.filter(
     (part) => part.type === "tool-selectFeedbackStyle",
+  );
+
+  const planParts = message.parts.filter(
+    (part) => part.type === "tool-createDevelopmentPlan",
   );
 
   return (
@@ -114,6 +132,20 @@ function MessageParts({
             onSelect={(style) => onSelectFeedbackStyle?.(style)}
           />
         );
+      })}
+      {planParts.map((part) => {
+        const pp = part as unknown as PlanToolPart;
+        if (pp.state === "output-available" && pp.output) {
+          return (
+            <DevelopmentPlanCard
+              key={pp.toolCallId}
+              planId={pp.output.planId}
+              title={pp.output.title}
+              summary={pp.output.summary}
+            />
+          );
+        }
+        return <DevelopmentPlanThinking key={pp.toolCallId} />;
       })}
     </>
   );
@@ -142,6 +174,8 @@ export function ChatPanel({
   const [promptsOpen, setPromptsOpen] = useState(false);
   const { personId } = usePersonId();
   const initiatedRef = useRef(false);
+  const latestPlanMarkdownRef = useRef<string | undefined>(undefined);
+  const processedPlanToolIds = useRef<Set<string>>(new Set());
 
   const bodyRef = useRef({
     model,
@@ -149,6 +183,7 @@ export function ChatPanel({
     rulesConfig,
     welcomeMessage,
     personId: personId ?? undefined,
+    currentPlanMarkdown: latestPlanMarkdownRef.current,
   });
   bodyRef.current = {
     model,
@@ -156,6 +191,7 @@ export function ChatPanel({
     rulesConfig,
     welcomeMessage,
     personId: personId ?? undefined,
+    currentPlanMarkdown: latestPlanMarkdownRef.current,
   };
 
   const transport = useMemo(
@@ -181,6 +217,35 @@ export function ChatPanel({
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
   });
 
+  useEffect(() => {
+    for (const message of messages) {
+      if (message.role !== "assistant") continue;
+      for (const part of message.parts) {
+        if (part.type !== "tool-createDevelopmentPlan") continue;
+        const pp = part as unknown as PlanToolPart;
+        if (
+          pp.state !== "input-available" ||
+          !pp.input ||
+          processedPlanToolIds.current.has(pp.toolCallId)
+        ) {
+          continue;
+        }
+        processedPlanToolIds.current.add(pp.toolCallId);
+        const plan = pp.input;
+        latestPlanMarkdownRef.current = planSchemaToMarkdown(plan);
+        void createDevelopmentPlan(chatId, personId ?? null, plan).then(
+          (created) => {
+            addToolOutput({
+              tool: "createDevelopmentPlan",
+              toolCallId: pp.toolCallId,
+              output: created,
+            });
+          },
+        );
+      }
+    }
+  }, [messages, chatId, personId, addToolOutput]);
+
   const isStreaming = status === "streaming";
   const isPending = status === "submitted";
 
@@ -192,7 +257,8 @@ export function ChatPanel({
       !lastMessage.parts.some(
         (p) =>
           (p.type === "text" && p.text.length > 0) ||
-          p.type === "tool-selectFeedbackStyle",
+          p.type === "tool-selectFeedbackStyle" ||
+          p.type === "tool-createDevelopmentPlan",
       ));
 
   useEffect(() => {
@@ -292,6 +358,9 @@ export function ChatPanel({
               message.parts.some((p) => p.type === "reasoning") ||
               message.parts.some(
                 (p) => p.type === "tool-selectFeedbackStyle",
+              ) ||
+              message.parts.some(
+                (p) => p.type === "tool-createDevelopmentPlan",
               );
 
             if (!hasContent) return null;
@@ -387,7 +456,9 @@ export function ChatPanel({
                     value={prompt.content}
                     onSelect={() => handleSelectPrompt(prompt)}
                   >
-                    <span className="line-clamp-1">{prompt.content || "Empty prompt"}</span>
+                    <span className="line-clamp-1">
+                      {prompt.content || "Empty prompt"}
+                    </span>
                   </CommandItem>
                 ))}
               </CommandGroup>
