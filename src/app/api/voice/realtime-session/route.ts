@@ -1,11 +1,12 @@
 import { VOICE_PROVIDER_CONFIG } from "@/lib/voice/providers";
+import { isOpenAiRealtimeVoice, type OpenAiRealtimeVoice } from "@/lib/voice/voice-options";
 
 /**
  * Mints an ephemeral client secret for an OpenAI Realtime (speech-to-speech)
- * session, used by the live "Realtime" interview mode. The secret is short-lived
- * and safe to hand to the browser; the API key never leaves the server.
+ * session. The secret is short-lived and safe to hand to the browser; the API
+ * key never leaves the server.
  */
-export async function POST() {
+export async function POST(req: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return Response.json(
@@ -17,6 +18,19 @@ export async function POST() {
   const { realtimeSpeechModel, realtimeSpeechVoice } =
     VOICE_PROVIDER_CONFIG.openai;
   const model = realtimeSpeechModel ?? "gpt-realtime";
+  const defaultVoice = realtimeSpeechVoice ?? "alloy";
+
+  let voice: OpenAiRealtimeVoice = isOpenAiRealtimeVoice(defaultVoice)
+    ? defaultVoice
+    : "alloy";
+  try {
+    const body = (await req.json()) as { voice?: string };
+    if (body.voice && isOpenAiRealtimeVoice(body.voice)) {
+      voice = body.voice;
+    }
+  } catch {
+    // Empty body is fine — use default voice.
+  }
 
   try {
     const res = await fetch(
@@ -31,6 +45,9 @@ export async function POST() {
           session: {
             type: "realtime",
             model,
+            audio: {
+              output: { voice },
+            },
           },
         }),
       },
@@ -60,7 +77,7 @@ export async function POST() {
     return Response.json({
       token,
       model,
-      voice: realtimeSpeechVoice ?? "alloy",
+      voice,
     });
   } catch (error) {
     const message =

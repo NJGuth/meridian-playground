@@ -1,8 +1,16 @@
 "use client";
 
+import { VOICE_PROVIDER_CONFIG } from "./providers";
+
 import type { RealtimeSession } from "@openai/agents/realtime";
 import { useCallback, useRef, useState } from "react";
 import { z } from "zod";
+import { MeridianOpenAIRealtimeWebRTC } from "./meridian-realtime-webrtc";
+import {
+  formatRealtimeConnectError,
+  getRealtimeSpeechModel,
+  mintRealtimeSessionToken,
+} from "./realtime-webrtc";
 import {
   buildRealtimeInterviewInstructions,
   INTERVIEW_QUESTION_COUNT,
@@ -100,24 +108,12 @@ export function useRealtimeInterview(callbacks: RealtimeInterviewCallbacks) {
       indexRef.current = 0;
 
       try {
-        const res = await fetch("/api/voice/realtime-session", {
-          method: "POST",
-        });
-        const data = (await res.json()) as {
-          token?: string;
-          model?: string;
-          voice?: string;
-          error?: string;
-        };
-
-        if (!res.ok || !data.token) {
-          throw new Error(data.error ?? "Failed to start realtime session");
-        }
+        const voice = VOICE_PROVIDER_CONFIG.openai.realtimeSpeechVoice ?? "alloy";
+        const sessionAuth = await mintRealtimeSessionToken(voice);
 
         const {
           RealtimeAgent,
           RealtimeSession: RealtimeSessionCtor,
-          OpenAIRealtimeWebRTC,
           tool,
         } = await import("@openai/agents/realtime");
 
@@ -136,7 +132,6 @@ export function useRealtimeInterview(callbacks: RealtimeInterviewCallbacks) {
 
         const questions = renderQuestions(coacheeName);
         const closing = renderClosing(coacheeName);
-        const voice = data.voice ?? "alloy";
 
         const recordAnswer = tool({
           name: "recordAnswer",
@@ -182,8 +177,8 @@ export function useRealtimeInterview(callbacks: RealtimeInterviewCallbacks) {
         });
 
         const session = new RealtimeSessionCtor(agent, {
-          transport: new OpenAIRealtimeWebRTC({ mediaStream }),
-          model: data.model ?? "gpt-realtime",
+          transport: new MeridianOpenAIRealtimeWebRTC({ mediaStream }),
+          model: sessionAuth.model ?? getRealtimeSpeechModel(),
           config: {
             audio: {
               input: { turnDetection: { type: "server_vad" } },
@@ -224,7 +219,7 @@ export function useRealtimeInterview(callbacks: RealtimeInterviewCallbacks) {
 
         sessionRef.current = session;
 
-        await session.connect({ apiKey: data.token });
+        await session.connect({ apiKey: sessionAuth.token });
 
         userMutedRef.current = false;
         assistantSpeakingRef.current = false;
@@ -236,11 +231,7 @@ export function useRealtimeInterview(callbacks: RealtimeInterviewCallbacks) {
         // its instructions. From here, server VAD drives every following turn.
         session.transport.sendEvent({ type: "response.create" });
       } catch (err) {
-        const message =
-          err instanceof Error
-            ? err.message
-            : "Failed to start realtime session";
-        setError(message);
+        setError(formatRealtimeConnectError(err));
         setStatus("error");
         clearUnmuteTimer();
         try {

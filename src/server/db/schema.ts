@@ -121,6 +121,45 @@ export const developmentPlans = pgTable("development_plans", {
     .notNull(),
 });
 
+export const voiceConcepts = pgTable("voice_concepts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: text("title").notNull().default("Untitled"),
+  voice: text("voice").notNull().default("alloy"),
+  persona: text("persona").notNull().default(""),
+  script: text("script").notNull().default(""),
+  rules: jsonb("rules").$type<string[]>().notNull().default([]),
+  openingLine: text("opening_line").notNull().default(""),
+  introText: text("intro_text").notNull().default(""),
+  contextNotes: text("context_notes").notNull().default(""),
+  warmth: integer("warmth").notNull().default(50),
+  cooperativeness: integer("cooperativeness").notNull().default(50),
+  aggression: integer("aggression").notNull().default(50),
+  patience: integer("patience").notNull().default(50),
+  volatility: integer("volatility").notNull().default(50),
+  tolerance: integer("tolerance").notNull().default(50),
+  reactivityEnabled: integer("reactivity_enabled").notNull().default(0),
+  moodTriggers: jsonb("mood_triggers")
+    .$type<
+      {
+        condition: string;
+        warmthDelta: number;
+        cooperativenessDelta: number;
+        aggressionDelta: number;
+        patienceDelta: number;
+      }[]
+    >()
+    .notNull()
+    .default([]),
+  hiddenAgenda: text("hidden_agenda").notNull().default(""),
+  agendaUnlockCondition: text("agenda_unlock_condition").notNull().default(""),
+  targetDurationMinutes: integer("target_duration_minutes"),
+  autoEndOnExpiry: integer("auto_end_on_expiry").notNull().default(0),
+  variationEnabled: integer("variation_enabled").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 export const scoringConfig = pgTable("scoring_config", {
   id: uuid("id").defaultRandom().primaryKey(),
   ld12HighThreshold: integer("ld12_high_threshold").notNull().default(75),

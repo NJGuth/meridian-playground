@@ -1,0 +1,1 @@
+ALTER TABLE "voice_concepts" ADD COLUMN "intro_text" text DEFAULT '' NOT NULL;

@@ -44,7 +44,10 @@ async function mintOpenAIToken() {
         audio: {
           input: {
             format: { type: "audio/pcm", rate: realtimeSampleRate },
-            transcription: { model: realtimeModel },
+            transcription: {
+              model: realtimeModel,
+              language: "en",
+            },
             turn_detection: { type: "server_vad" },
           },
         },

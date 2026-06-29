@@ -109,6 +109,18 @@ export const PROTOTYPES: PrototypeEntry[] = [
     href: "/hub/voice",
     status: "draft",
   },
+  {
+    id: "voice-concepts",
+    title: "Voice Concepts",
+    description:
+      "Create configurable OpenAI Realtime voice experiences with persona, script, and rules.",
+    folder: "voice",
+    slug: "voice-concepts",
+    complexity: "full-stack",
+    kind: "route",
+    href: "/hub/voice-concepts",
+    status: "draft",
+  },
 ];
 
 export function getFolder(id: string) {

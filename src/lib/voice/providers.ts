@@ -50,3 +50,9 @@ export const VOICE_PROVIDER_CONFIG = {
 export function isVoiceProvider(value: string): value is VoiceProvider {
   return value === "openai" || value === "elevenlabs";
 }
+
+/** Realtime input transcription — English-only for voice training sessions. */
+export const ENGLISH_REALTIME_TRANSCRIPTION = {
+  model: "gpt-4o-mini-transcribe",
+  language: "en",
+} as const;
