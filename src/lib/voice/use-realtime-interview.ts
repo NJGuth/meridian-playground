@@ -10,6 +10,7 @@ import {
   formatRealtimeConnectError,
   getRealtimeSpeechModel,
   mintRealtimeSessionToken,
+  type RealtimeSessionToken,
 } from "./realtime-webrtc";
 import {
   buildRealtimeInterviewInstructions,
@@ -17,6 +18,7 @@ import {
   renderClosing,
   renderQuestions,
 } from "./interview-script";
+import { extractTranscript, type TranscriptEntry } from "./transcript";
 
 export type RealtimeInterviewStatus = "idle" | "connecting" | "live" | "error";
 export type RealtimeAnswerStatus = "answered" | "partial" | "skipped";
@@ -30,8 +32,26 @@ type RealtimeInterviewCallbacks = {
   ) => void;
   /** The client-owned question index advanced to. */
   onIndexChange: (index: number) => void;
-  /** All questions have been recorded. */
+  /** All questions have been recorded (the model is now delivering the closing). */
   onComplete: () => void;
+  /**
+   * Fires once the spoken closing has finished after the final question. This is
+   * the safe point to tear the session down: it happens after the SDK has sent
+   * the final tool output, so calling `stop()` here won't race the data channel.
+   */
+  onClosingFinished?: () => void;
+  /** The running transcript as extracted from the realtime history. */
+  onTranscriptUpdate?: (entries: TranscriptEntry[]) => void;
+};
+
+export type StartInterviewOptions = {
+  deviceId?: string;
+  /**
+   * Custom token minter. Defaults to the authenticated
+   * `/api/voice/realtime-session` route; the public interview flow supplies a
+   * passcode-guarded minter instead.
+   */
+  mintToken?: (voice: string) => Promise<RealtimeSessionToken>;
 };
 
 /**
@@ -55,6 +75,10 @@ export function useRealtimeInterview(callbacks: RealtimeInterviewCallbacks) {
   const sessionRef = useRef<RealtimeSession | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const indexRef = useRef(0);
+  // Set once the final question is recorded; used to fire onClosingFinished
+  // after the model delivers its spoken closing (exactly once).
+  const completedRef = useRef(false);
+  const closingFiredRef = useRef(false);
   // The user's manual mute intent, kept separate from the automatic half-duplex
   // gate below so toggling it composes correctly.
   const userMutedRef = useRef(false);
@@ -93,6 +117,8 @@ export function useRealtimeInterview(callbacks: RealtimeInterviewCallbacks) {
     micStreamRef.current = null;
     userMutedRef.current = false;
     assistantSpeakingRef.current = false;
+    completedRef.current = false;
+    closingFiredRef.current = false;
     setIsMuted(false);
     setIsAssistantSpeaking(false);
     setIsMicActive(false);
@@ -100,16 +126,21 @@ export function useRealtimeInterview(callbacks: RealtimeInterviewCallbacks) {
   }, [clearUnmuteTimer]);
 
   const start = useCallback(
-    async (coacheeName: string, deviceId?: string) => {
+    async (coacheeName: string, options?: StartInterviewOptions) => {
       if (sessionRef.current) return;
+
+      const deviceId = options?.deviceId;
+      const mintToken = options?.mintToken ?? mintRealtimeSessionToken;
 
       setError(null);
       setStatus("connecting");
       indexRef.current = 0;
+      completedRef.current = false;
+      closingFiredRef.current = false;
 
       try {
         const voice = VOICE_PROVIDER_CONFIG.openai.realtimeSpeechVoice ?? "alloy";
-        const sessionAuth = await mintRealtimeSessionToken(voice);
+        const sessionAuth = await mintToken(voice);
 
         const {
           RealtimeAgent,
@@ -156,6 +187,11 @@ export function useRealtimeInterview(callbacks: RealtimeInterviewCallbacks) {
             const next = slot + 1;
             if (next >= INTERVIEW_QUESTION_COUNT) {
               indexRef.current = next;
+              // Mark completion but keep the session alive: the SDK still needs
+              // to send this tool's output over the data channel, and we want
+              // the model to speak the closing. Teardown happens later, in the
+              // assistant-done handler, via onClosingFinished.
+              completedRef.current = true;
               cbRef.current.onIndexChange(next);
               cbRef.current.onComplete();
               return `All ${INTERVIEW_QUESTION_COUNT} questions are complete. Deliver this closing now, then stop and ask nothing further: "${closing}"`;
@@ -187,6 +223,10 @@ export function useRealtimeInterview(callbacks: RealtimeInterviewCallbacks) {
           },
         });
 
+        session.on("history_updated", (history) => {
+          cbRef.current.onTranscriptUpdate?.(extractTranscript(history));
+        });
+
         session.on("audio_start", () => {
           clearUnmuteTimer();
           assistantSpeakingRef.current = true;
@@ -203,6 +243,15 @@ export function useRealtimeInterview(callbacks: RealtimeInterviewCallbacks) {
             unmuteTimerRef.current = null;
             applyMicState();
           }, 150);
+
+          // The closing has now been spoken after the final question. Fire the
+          // safe-teardown callback exactly once — this runs after the SDK has
+          // sent the final tool output, so the consumer can call stop() without
+          // racing the WebRTC data channel.
+          if (completedRef.current && !closingFiredRef.current) {
+            closingFiredRef.current = true;
+            cbRef.current.onClosingFinished?.();
+          }
         };
         session.on("audio_stopped", handleAssistantDone);
         session.on("audio_interrupted", handleAssistantDone);

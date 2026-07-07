@@ -121,6 +121,18 @@ export const PROTOTYPES: PrototypeEntry[] = [
     href: "/hub/voice-concepts",
     status: "draft",
   },
+  {
+    id: "360-interview",
+    title: "360 Interview",
+    description:
+      "Share a passcode-gated link to collect voice 360 feedback, then generate a cross-interview report.",
+    folder: "voice",
+    slug: "360-interview",
+    complexity: "full-stack",
+    kind: "route",
+    href: "/hub/360-interview",
+    status: "draft",
+  },
 ];
 
 export function getFolder(id: string) {

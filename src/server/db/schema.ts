@@ -160,6 +160,37 @@ export const voiceConcepts = pgTable("voice_concepts", {
     .notNull(),
 });
 
+export const interviewConcepts = pgTable("interview_concepts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: text("title").notNull().default("360 Interview"),
+  subjectName: text("subject_name").notNull().default("Nicholas Guthrie"),
+  passcode: text("passcode").notNull().default(""),
+  introText: text("intro_text").notNull().default(""),
+  report: text("report").notNull().default(""),
+  reportGeneratedAt: timestamp("report_generated_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const interviews = pgTable("interviews", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  conceptId: uuid("concept_id")
+    .notNull()
+    .references(() => interviewConcepts.id, { onDelete: "cascade" }),
+  intervieweeName: text("interviewee_name").notNull().default(""),
+  status: text("status").notNull().default("in_progress"),
+  transcript: jsonb("transcript")
+    .$type<{ id: string; role: "user" | "assistant"; text: string }[]>()
+    .notNull()
+    .default([]),
+  summary: text("summary").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+});
+
 export const scoringConfig = pgTable("scoring_config", {
   id: uuid("id").defaultRandom().primaryKey(),
   ld12HighThreshold: integer("ld12_high_threshold").notNull().default(75),

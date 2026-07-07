@@ -385,7 +385,7 @@ export function VoiceDemo() {
       // fire.
       interviewActiveRef.current = false;
       setInterviewPhase("running");
-      void realtime.start(name, selectedMicId || undefined);
+      void realtime.start(name, { deviceId: selectedMicId || undefined });
       return;
     }
 

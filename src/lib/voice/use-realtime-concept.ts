@@ -1,6 +1,6 @@
 "use client";
 
-import type { RealtimeItem, RealtimeSession } from "@openai/agents/realtime";
+import type { RealtimeSession } from "@openai/agents/realtime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import {
@@ -20,14 +20,11 @@ import {
   getRealtimeSpeechModel,
   mintRealtimeSessionToken,
 } from "./realtime-webrtc";
+import { extractTranscript, type TranscriptEntry } from "./transcript";
 
 export type RealtimeConceptStatus = "idle" | "connecting" | "live" | "error";
 
-export type TranscriptEntry = {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-};
+export type { TranscriptEntry };
 
 export type RealtimeSessionConfig = VoiceConceptConfig & {
   voice: OpenAiRealtimeVoice;
@@ -41,49 +38,6 @@ type RealtimeConceptCallbacks = {
   onTimeExpired?: () => void;
   onRemainingSeconds?: (seconds: number | null) => void;
 };
-
-function extractTranscript(history: RealtimeItem[]): TranscriptEntry[] {
-  const entries: TranscriptEntry[] = [];
-
-  for (const item of history) {
-    if (item.type !== "message") continue;
-
-    if (item.role === "user") {
-      const textParts: string[] = [];
-      for (const content of item.content) {
-        if (content.type === "input_text" && content.text.trim()) {
-          if (content.text.startsWith("[SYSTEM TIME CUE:")) continue;
-          textParts.push(content.text.trim());
-        }
-        if (content.type === "input_audio" && content.transcript?.trim()) {
-          textParts.push(content.transcript.trim());
-        }
-      }
-      const text = textParts.join(" ").trim();
-      if (text) {
-        entries.push({ id: item.itemId, role: "user", text });
-      }
-    }
-
-    if (item.role === "assistant") {
-      const textParts: string[] = [];
-      for (const content of item.content) {
-        if (content.type === "output_text" && content.text.trim()) {
-          textParts.push(content.text.trim());
-        }
-        if (content.type === "output_audio" && content.transcript?.trim()) {
-          textParts.push(content.transcript.trim());
-        }
-      }
-      const text = textParts.join(" ").trim();
-      if (text) {
-        entries.push({ id: item.itemId, role: "assistant", text });
-      }
-    }
-  }
-
-  return entries;
-}
 
 function sendTimeCue(session: RealtimeSession, message: string) {
   session.sendMessage({
