@@ -37,6 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Markdown } from "@/components/ui/markdown";
 import { InterviewExperience } from "@/components/interview/interview-experience";
 import {
   deleteInterview,
@@ -297,10 +298,8 @@ export function InterviewConceptManager({
         {reportError && <p className="text-sm text-destructive">{reportError}</p>}
 
         {report && (
-          <div className="rounded-xl border border-border bg-muted/30 p-5">
-            <p className="whitespace-pre-wrap text-sm/6 text-foreground">
-              {report}
-            </p>
+          <div className="rounded-xl border border-border bg-card p-6 sm:p-8">
+            <Markdown className="typography mx-auto">{report}</Markdown>
           </div>
         )}
       </div>

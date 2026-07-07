@@ -49,23 +49,25 @@ export async function POST(req: Request) {
 
   const result = await generateText({
     model: "anthropic/claude-sonnet-4-6",
-    system: `You are an organizational psychologist synthesizing multiple 360-degree feedback interviews about one subject. Write in plain text with clear ALL-CAPS section headers (no markdown symbols). Be candid, specific, and balanced. When you quote, use the respondent's actual words in quotation marks, but keep quotes anonymous (do not attribute to a named person). Only use what is present in the transcripts.`,
+    system: `You are an organizational psychologist synthesizing multiple 360-degree feedback interviews about one subject. Write in GitHub-flavored Markdown. Be candid, specific, and balanced. When you quote, use the respondent's actual words as Markdown blockquotes (lines starting with "> "), but keep quotes anonymous (do not attribute to a named person). Only use what is present in the transcripts.`,
     prompt: `Subject: ${concept.subjectName}
 Number of interviews: ${completed.length}
 
-Produce a synthesized 360 feedback report with these sections:
+Produce a synthesized 360 feedback report in Markdown. Start with a level-1 heading (# ${concept.subjectName} — 360 Feedback Report). Use level-2 headings (## ) for each of these sections, in this order:
 
-OVERALL THEMES
-The cross-cutting patterns that recur across interviews.
+## Overall Themes
+The cross-cutting patterns that recur across interviews. Use a short paragraph and/or a bulleted list.
 
-STRENGTHS
-What people consistently appreciate. Include 3-5 short verbatim quotes (anonymous, in quotation marks).
+## Strengths
+What people consistently appreciate. Include 3-5 short verbatim quotes as Markdown blockquotes (anonymous).
 
-DEVELOPMENT AREAS
-Candid growth areas and criticisms. Include 3-5 short verbatim quotes (anonymous, in quotation marks).
+## Development Areas
+Candid growth areas and criticisms. Include 3-5 short verbatim quotes as Markdown blockquotes (anonymous).
 
-UNIFIED PERSPECTIVE
+## Unified Perspective
 A cohesive qualitative narrative of how the interviewees, taken together, think about ${concept.subjectName}.
+
+Use **bold** for emphasis where helpful. Do not wrap the whole response in a code block.
 
 Interviews:
 ${corpus}`,
