@@ -2,6 +2,119 @@ export type VoiceProvider = "openai" | "elevenlabs";
 
 export const VOICE_PROVIDERS: VoiceProvider[] = ["openai", "elevenlabs"];
 
+/** OpenAI TTS voices supported by gpt-4o-mini-tts / tts-1. */
+export const OPENAI_SPEECH_VOICES = [
+  "alloy",
+  "ash",
+  "ballad",
+  "coral",
+  "echo",
+  "fable",
+  "nova",
+  "onyx",
+  "sage",
+  "shimmer",
+] as const;
+
+export type OpenAISpeechVoice = (typeof OPENAI_SPEECH_VOICES)[number];
+
+export function isOpenAISpeechVoice(value: string): value is OpenAISpeechVoice {
+  return (OPENAI_SPEECH_VOICES as readonly string[]).includes(value);
+}
+
+export type OpenAIVoiceOption = {
+  id: OpenAISpeechVoice;
+  name: string;
+  gender: "male" | "female" | "non-binary";
+  accent: "american" | "british";
+  age: string;
+  description: string;
+};
+
+/** Curated metadata for Voice Selector demos (not from the OpenAI API). */
+export const OPENAI_VOICE_OPTIONS: OpenAIVoiceOption[] = [
+  {
+    id: "alloy",
+    name: "Alloy",
+    gender: "non-binary",
+    accent: "american",
+    age: "30s",
+    description: "Balanced, neutral default",
+  },
+  {
+    id: "ash",
+    name: "Ash",
+    gender: "male",
+    accent: "american",
+    age: "30s",
+    description: "Clear and steady",
+  },
+  {
+    id: "ballad",
+    name: "Ballad",
+    gender: "male",
+    accent: "british",
+    age: "40s",
+    description: "Warm narrative tone",
+  },
+  {
+    id: "coral",
+    name: "Coral",
+    gender: "female",
+    accent: "american",
+    age: "30s",
+    description: "Bright and engaging",
+  },
+  {
+    id: "echo",
+    name: "Echo",
+    gender: "male",
+    accent: "american",
+    age: "30s",
+    description: "Resonant and calm",
+  },
+  {
+    id: "fable",
+    name: "Fable",
+    gender: "male",
+    accent: "british",
+    age: "30s",
+    description: "Expressive storyteller",
+  },
+  {
+    id: "nova",
+    name: "Nova",
+    gender: "female",
+    accent: "american",
+    age: "20s",
+    description: "Energetic and friendly",
+  },
+  {
+    id: "onyx",
+    name: "Onyx",
+    gender: "male",
+    accent: "american",
+    age: "40s",
+    description: "Deep and authoritative",
+  },
+  {
+    id: "sage",
+    name: "Sage",
+    gender: "female",
+    accent: "american",
+    age: "30s",
+    description: "Thoughtful and measured",
+  },
+  {
+    id: "shimmer",
+    name: "Shimmer",
+    gender: "female",
+    accent: "american",
+    age: "20s",
+    description: "Light and upbeat",
+  },
+];
+
 export const VOICE_PROVIDER_LABELS: Record<VoiceProvider, string> = {
   openai: "OpenAI",
   elevenlabs: "ElevenLabs",

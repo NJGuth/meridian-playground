@@ -54,8 +54,7 @@ export const PROTOTYPES: PrototypeEntry[] = [
   {
     id: "reports-placeholder",
     title: "Report Concepts",
-    description:
-      "Placeholder shell for assessment and debrief report layouts.",
+    description: "Placeholder shell for assessment and debrief report layouts.",
     folder: "reports",
     slug: "placeholder",
     complexity: "ui",
@@ -107,6 +106,18 @@ export const PROTOTYPES: PrototypeEntry[] = [
     complexity: "ui",
     kind: "route",
     href: "/hub/voice",
+    status: "draft",
+  },
+  {
+    id: "voice-message-input",
+    title: "Voice → Message Input",
+    description:
+      "Dictate into the chat composer with AI Elements Speech Input, Voice Selector, and synced Transcription on spoken replies.",
+    folder: "voice",
+    slug: "message-input",
+    complexity: "ai",
+    kind: "route",
+    href: "/hub/voice/message-input",
     status: "draft",
   },
   {
